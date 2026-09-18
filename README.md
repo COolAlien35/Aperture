@@ -28,6 +28,7 @@ curl http://localhost:8080/health
 
 ### Test the Gateway
 
+**Non-streaming completion:**
 ```bash
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -35,6 +36,25 @@ curl -X POST http://localhost:8080/v1/chat/completions \
     "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
+```
+
+**Streaming completion (SSE):**
+```bash
+curl -N -X POST http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Count from 1 to 5"}],
+    "stream": true
+  }'
+```
+
+### Running Tests
+
+Run the full unit and integration test suite:
+
+```bash
+python -m pytest tests/ -v
 ```
 
 ## Services
