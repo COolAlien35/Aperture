@@ -109,5 +109,53 @@ class TestTeamBModules(unittest.IsolatedAsyncioTestCase):
         metadata = await get_key_metadata(mock_redis, mock_dynamo, "KeysTable", key)
         self.assertIsNone(metadata)
 
+    async def test_key_metadata_suspended_key(self):
+        """Edge Case: Test that suspended keys are rejected."""
+        mock_redis = AsyncMock()
+        mock_redis.get.return_value = None
+        mock_dynamo = MagicMock()
+        mock_dynamo.get_item.return_value = {
+            "Item": {
+                "team_id": {"S": "team_suspended"},
+                "role": {"S": "Developer"},
+                "status": {"S": "suspended"}
+            }
+        }
+        
+        key = generate_virtual_key()
+        metadata = await get_key_metadata(mock_redis, mock_dynamo, "KeysTable", key)
+        self.assertIsNone(metadata)
+
+    async def test_key_metadata_invalid_prefix(self):
+        """Edge Case: Test that keys without correct prefix are rejected instantly without hitting DB."""
+        mock_redis = AsyncMock()
+        mock_dynamo = MagicMock()
+        
+        key = "bad-prefix-12345"
+        metadata = await get_key_metadata(mock_redis, mock_dynamo, "KeysTable", key)
+        self.assertIsNone(metadata)
+        mock_redis.get.assert_not_called()
+        mock_dynamo.get_item.assert_not_called()
+
+    async def test_rbac_edge_cases(self):
+        """Edge Case: RBAC edge cases including invalid roles."""
+        # Unrecognized role string should default to restrictive/deny
+        self.assertFalse(can_access_model("SuperHacker", "gpt-3.5-turbo"))
+        self.assertFalse(can_access_model("", "gpt-3.5-turbo"))
+        self.assertFalse(can_access_model(None, "gpt-3.5-turbo"))
+
+    async def test_cost_estimation_zero_tokens(self):
+        """Edge Case: Cost estimation with 0 prompt tokens."""
+        cost = estimate_cost("gpt-4", prompt_tokens=0, requested_max_tokens=1000)
+        expected = (1000 / 1000.0) * 0.06
+        self.assertAlmostEqual(cost, expected, places=5)
+
+    async def test_cost_estimation_unknown_model(self):
+        """Edge Case: Cost estimation with an unknown model gracefully falls back to default pricing."""
+        # DEFAULT_PRICING is (0.01, 0.03)
+        cost = estimate_cost("claude-unknown-future-model", prompt_tokens=1000, requested_max_tokens=2000)
+        expected = 0.01 + 0.06
+        self.assertAlmostEqual(cost, expected, places=5)
+
 if __name__ == '__main__':
     unittest.main()
