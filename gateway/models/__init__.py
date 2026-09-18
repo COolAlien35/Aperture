@@ -110,3 +110,63 @@ class GatewayError(BaseModel):
             "code": None,
         }
     )
+
+
+# ──────────────────────────────────────────────
+# Usage event model (Person C: Kafka streaming & DynamoDB logging)
+# ──────────────────────────────────────────────
+
+
+class UsageEvent(BaseModel):
+    """
+    Kafka usage event schema — Person C contract.
+    Published by gateway/events/producer.py after request reconciliation.
+    Consumed by consumer service for DynamoDB writes and spend aggregation.
+
+    Per PRD and Design Decisions #7 and #8:
+      - request_id generated at request start in main.py
+      - Token counts normalized to OpenAI format (prompt_tokens / completion_tokens)
+      - Idempotency key for DynamoDB consumer deduplication: PROCESSED#<request_id>
+    """
+
+    request_id: str
+    key_id: str
+    team_id: str
+    model: str
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float = 0.0
+    actual_cost_usd: float = 0.0
+    status: str = "success"  # "success" | "error" | "partial"
+    timestamp: str  # ISO 8601 UTC
+    error_message: str | None = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.total_tokens == 0 and (self.prompt_tokens or self.completion_tokens):
+            self.total_tokens = self.prompt_tokens + self.completion_tokens
+
+    def to_dynamodb_usage_item(self) -> dict[str, Any]:
+        """Convert usage event to DynamoDB single-table item for KEY#<key_id> / USAGE#<timestamp>."""
+        from decimal import Decimal
+
+        item: dict[str, Any] = {
+            "PK": f"KEY#{self.key_id}",
+            "SK": f"USAGE#{self.timestamp}",
+            "request_id": self.request_id,
+            "key_id": self.key_id,
+            "team_id": self.team_id,
+            "model": self.model,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "total_tokens": self.total_tokens,
+            "actual_cost_usd": Decimal(str(self.actual_cost_usd)),
+            "estimated_cost_usd": Decimal(str(self.estimated_cost_usd)),
+            "status": self.status,
+            "timestamp": self.timestamp,
+            "GSI1PK": self.team_id,
+            "GSI1SK": f"USAGE#{self.timestamp}",
+        }
+        if self.error_message:
+            item["error_message"] = self.error_message
+        return item

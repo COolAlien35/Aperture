@@ -9,7 +9,7 @@
 #   gateway       → http://localhost:8080  (FastAPI AI gateway)
 #   redis         → localhost:6379         (budget enforcement)
 #   kafka         → localhost:9092         (usage event streaming)
-#   dynamodb-local→ localhost:8000         (keys, budgets, usage)
+#   dynamodb-local→ localhost:8001         (keys, budgets, usage)
 # ──────────────────────────────────────────────────────────────
 
 services:
@@ -59,27 +59,30 @@ services:
 
   # ── Kafka in KRaft Mode (No Zookeeper) ──────────────────────
   # Usage event streaming — Person C's consumer reads from here
-  # Using official Apache Kafka image (bitnami/kafka:latest no longer available)
   kafka:
     image: apache/kafka:latest
     container_name: aperture-kafka
     ports:
-      - "9092:9092"
+      - "9092:9092"    # Internal listener (container-to-container, e.g. gateway)
+      - "9093:9093"    # External listener (host access: scripts, local consumer)
     environment:
       # KRaft mode settings (no Zookeeper needed)
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      # Listener configuration
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      # Dual-listener setup:
+      #   INTERNAL → used by gateway/consumer containers (advertises kafka:9092)
+      #   EXTERNAL → used by host-side scripts (advertises localhost:9093)
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9093,CONTROLLER://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       # Single-node dev settings
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      # Required for KRaft — generate with kafka-storage.sh or use a fixed ID for dev
+      # Required for KRaft — fixed ID for local dev
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM1Tk
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
@@ -94,9 +97,10 @@ services:
     image: amazon/dynamodb-local:latest
     container_name: aperture-dynamodb
     ports:
-      - "8000:8000"
+      - "8001:8000"    # Host 8001 → Container 8000 (8000 is taken by SSH tunnel on this machine)
     volumes:
       - dynamodb_data:/home/dynamodblocal/data
+    user: root
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
 
 volumes:
