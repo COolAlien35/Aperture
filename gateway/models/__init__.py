@@ -17,7 +17,7 @@ from typing import Any
 
 class ChatMessage(BaseModel):
     role: str  # "system" | "user" | "assistant"
-    content: str | list[Any]  # string or content blocks
+    content: str | list[Any] | None = ""  # string, content blocks, or None
 
 
 class ChatCompletionRequest(BaseModel):

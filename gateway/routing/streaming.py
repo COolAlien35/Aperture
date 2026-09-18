@@ -249,6 +249,9 @@ async def call_anthropic_streaming(
 
                     # ── Handle non-200 responses ──
                     if response.status_code != 200:
+                        if response.status_code >= 500:
+                            from gateway.routing.circuit_breaker import anthropic_breaker
+                            anthropic_breaker.record_failure()
                         body = await response.aread()
                         try:
                             error_data = json.loads(body)
@@ -414,9 +417,13 @@ async def call_anthropic_streaming(
                         elif event_type == "message_stop":
                             yield "data: [DONE]\n\n"
                             stream_status = "success"
+                            from gateway.routing.circuit_breaker import anthropic_breaker
+                            anthropic_breaker.record_success()
 
         except httpx.ConnectError as e:
             logger.error(f"Failed to connect to Anthropic (streaming): {e}")
+            from gateway.routing.circuit_breaker import anthropic_breaker
+            anthropic_breaker.record_failure()
             error_chunk = {
                 "id": response_id,
                 "object": "chat.completion.chunk",
@@ -441,6 +448,8 @@ async def call_anthropic_streaming(
 
         except httpx.TimeoutException as e:
             logger.error(f"Timeout streaming from Anthropic: {e}")
+            from gateway.routing.circuit_breaker import anthropic_breaker
+            anthropic_breaker.record_failure()
             stream_status = "error"
             yield "data: [DONE]\n\n"
 

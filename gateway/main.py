@@ -161,12 +161,6 @@ async def chat_completions(request: Request):
             response = await call_anthropic_streaming(
                 request, anthropic_payload, original_model
             )
-            # For streaming, circuit breaker feedback happens inside
-            # the generator (we can't check the first response here
-            # without consuming it). For simplicity, we record success
-            # after returning the StreamingResponse — the generator's
-            # finally block handles the failure case.
-            anthropic_breaker.record_success()
             return response
         else:
             response = await call_anthropic_non_streaming(

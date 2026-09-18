@@ -165,7 +165,7 @@ def translate_request_to_anthropic(openai_payload: dict) -> dict:
             else:
                 non_system_messages.append({
                     "role": role,
-                    "content": content,
+                    "content": content if content is not None else "",
                 })
 
     # ── Resolve model name ──
