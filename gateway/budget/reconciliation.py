@@ -5,12 +5,13 @@ from gateway.budget.cost_estimation import calculate_actual_cost
 
 logger = logging.getLogger(__name__)
 
+
 async def _run_redis_reconciliation(
     redis_client: Any,
     script_sha: str,
     team_id: str,
     estimated_cost: float,
-    actual_cost: float
+    actual_cost: float,
 ) -> None:
     """
     Executes the Redis Lua script to reconcile the budget difference.
@@ -27,15 +28,14 @@ async def _run_redis_reconciliation(
 
     try:
         await redis_client.evalsha(
-            script_sha,
-            1,
-            usage_key,
-            'RECONCILE',
-            str(cost_difference)
+            script_sha, 1, usage_key, "RECONCILE", str(cost_difference)
         )
-        logger.info(f"Reconciled team {team_id}: estimated={estimated_cost:.6f}, actual={actual_cost:.6f}, diff={cost_difference:.6f}")
+        logger.info(
+            f"Reconciled team {team_id}: estimated={estimated_cost:.6f}, actual={actual_cost:.6f}, diff={cost_difference:.6f}"
+        )
     except Exception as e:
         logger.error(f"Failed to reconcile budget for team {team_id}: {e}")
+
 
 def _estimate_tokens_from_text(text: str) -> int:
     """
@@ -44,13 +44,14 @@ def _estimate_tokens_from_text(text: str) -> int:
     """
     return max(1, len(text) // 4)
 
+
 async def token_tracking_stream(
     underlying_stream: AsyncGenerator[str, None],
     request_state: Any,
     app_state: Any,
     model: str,
     prompt_tokens: int,
-    estimated_cost: float
+    estimated_cost: float,
 ) -> AsyncGenerator[str, None]:
     """
     Wraps an LLM provider's SSE stream.
@@ -75,23 +76,25 @@ async def token_tracking_stream(
                 except Exception:
                     # Fallback if not standard JSON
                     text_content = chunk
-            
-            completion_tokens += _estimate_tokens_from_text(text_content) if text_content else 0
-            
+
+            completion_tokens += (
+                _estimate_tokens_from_text(text_content) if text_content else 0
+            )
+
             yield chunk
-            
+
     finally:
         # This block executes no matter what: normal finish, client abort, or upstream error.
         actual_cost = calculate_actual_cost(model, prompt_tokens, completion_tokens)
-        
+
         redis_client = getattr(app_state, "redis", None)
         script_sha = getattr(app_state, "budget_script_sha", None)
-        
+
         # Fire and forget the reconciliation task to avoid blocking the final chunk
         await _run_redis_reconciliation(
             redis_client=redis_client,
             script_sha=script_sha,
             team_id=team_id,
             estimated_cost=estimated_cost,
-            actual_cost=actual_cost
+            actual_cost=actual_cost,
         )

@@ -31,44 +31,50 @@ from gateway.middleware.budget import budget_check_middleware
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize Redis connection pool
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     app.state.redis = redis.from_url(redis_url, decode_responses=True)
-    
+
     # Initialize DynamoDB client (Team C dependency)
     dynamodb_endpoint = os.getenv("DYNAMODB_URL", "http://localhost:8000")
     app.state.dynamo = boto3.client(
-        'dynamodb',
+        "dynamodb",
         endpoint_url=dynamodb_endpoint,
-        region_name='us-east-1',
-        aws_access_key_id='DUMMYIDEXAMPLE',
-        aws_secret_access_key='DUMMYEXAMPLEKEY'
+        region_name="us-east-1",
+        aws_access_key_id="DUMMYIDEXAMPLE",
+        aws_secret_access_key="DUMMYEXAMPLEKEY",
     )
-    
+
     # Load Lua budget script
-    script_path = os.path.join(os.path.dirname(__file__), "redis_scripts", "budget_script.lua")
+    script_path = os.path.join(
+        os.path.dirname(__file__), "redis_scripts", "budget_script.lua"
+    )
     try:
         with open(script_path, "r") as f:
             script_content = f.read()
             # Load script into Redis and store SHA for fast execution
-            app.state.budget_script_sha = await app.state.redis.script_load(script_content)
+            app.state.budget_script_sha = await app.state.redis.script_load(
+                script_content
+            )
             logger.info(f"Loaded budget Lua script. SHA: {app.state.budget_script_sha}")
     except Exception as e:
         logger.error(f"Failed to load Lua script: {e}")
         app.state.budget_script_sha = None
 
     yield
-    
+
     # Shutdown
     await app.state.redis.close()
+
 
 app = FastAPI(
     title="Aperture AI Gateway",
     description="Enterprise AI Gateway & Spend Management Platform",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 
