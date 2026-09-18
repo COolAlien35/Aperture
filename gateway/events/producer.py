@@ -34,7 +34,7 @@ import asyncio
 import json
 import logging
 import os
-from datetime import datetime, timezone
+
 
 from aiokafka import AIOKafkaProducer
 from aiokafka.errors import KafkaConnectionError, KafkaError
@@ -87,7 +87,9 @@ async def get_producer() -> AIOKafkaProducer | None:
                 KAFKA_TOPIC,
             )
         except (KafkaConnectionError, KafkaError, Exception) as exc:
-            logger.warning("[Kafka] Producer init failed — events will be dropped: %s", exc)
+            logger.warning(
+                "[Kafka] Producer init failed — events will be dropped: %s", exc
+            )
             _producer = None
 
     return _producer
