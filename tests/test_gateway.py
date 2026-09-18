@@ -190,3 +190,30 @@ def test_chat_completions_streaming_endpoint():
         assert "[DONE]" in body
         mock_stream.assert_called_once()
 
+
+def test_models_endpoint():
+    """GET /v1/models returns OpenAI-compatible model catalog."""
+    response = client.get("/v1/models")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["object"] == "list"
+    assert isinstance(data["data"], list)
+    model_ids = [m["id"] for m in data["data"]]
+    assert "gpt-4o" in model_ids
+    assert "claude-sonnet-4-6" in model_ids
+
+
+def test_cors_headers():
+    """CORS preflight and responses include appropriate headers."""
+    response = client.options(
+        "/v1/chat/completions",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") in ("*", "http://localhost:3000")
+    assert "POST" in response.headers.get("access-control-allow-methods", "")
+
+

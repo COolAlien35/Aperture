@@ -16,6 +16,7 @@ Streaming event mapping (Anthropic → OpenAI):
 See: Task 4 in PERSON_A_TASKS.md
 """
 
+import asyncio
 import json
 import time
 import uuid
@@ -44,6 +45,19 @@ CONNECT_TIMEOUT = 10.0      # seconds to establish connection
 READ_TIMEOUT = 120.0        # seconds to wait for streaming data
 WRITE_TIMEOUT = 10.0        # seconds for sending request
 
+_tokenizer = None
+
+
+def _get_tokenizer():
+    global _tokenizer
+    if _tokenizer is None:
+        try:
+            import tiktoken
+            _tokenizer = tiktoken.get_encoding("cl100k_base")
+        except Exception:
+            _tokenizer = False
+    return _tokenizer if _tokenizer is not False else None
+
 
 def _get_anthropic_headers() -> dict[str, str]:
     """Build the required headers for the Anthropic API."""
@@ -56,17 +70,20 @@ def _get_anthropic_headers() -> dict[str, str]:
 
 def _estimate_tokens_from_text(text: str) -> int:
     """
-    Rough token estimation from text.
-
-    Uses a simple heuristic: ~4 characters per token on average for English.
-    This is a conservative estimate used for partial-disconnect reconciliation
-    when we don't have an accurate count from the provider.
-
-    For production, use tiktoken for accurate counts.
+    Token estimation from text.
+    Uses tiktoken cl100k_base when available, falling back
+    to ~4 characters per token heuristic.
     """
     if not text:
         return 0
+    enc = _get_tokenizer()
+    if enc is not None:
+        try:
+            return max(1, len(enc.encode(text)))
+        except Exception:
+            pass
     return max(1, len(text) // 4)
+
 
 
 async def call_anthropic_non_streaming(
@@ -453,7 +470,7 @@ async def call_anthropic_streaming(
             stream_status = "error"
             yield "data: [DONE]\n\n"
 
-        except GeneratorExit:
+        except (GeneratorExit, asyncio.CancelledError):
             # ── Case 2: Client disconnect ──
             # Client closed the connection mid-stream.
             # Use tokens_streamed_so_far for reconciliation.

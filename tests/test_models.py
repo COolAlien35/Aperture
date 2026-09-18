@@ -106,3 +106,17 @@ class TestModels:
             }
         )
         assert err.error["code"] == "budget_exceeded"
+
+    def test_request_allows_extra_parameters(self):
+        """Requests with custom fields (user, seed, response_format) don't error."""
+        req = ChatCompletionRequest(
+            model="gpt-4o",
+            messages=[ChatMessage(role="user", content="Hi", custom_metadata="test")],
+            user="org-user-99",
+            seed=42,
+            max_completion_tokens=2048,
+        )
+        assert req.max_completion_tokens == 2048
+        assert req.model_extra.get("user") == "org-user-99"
+        assert req.model_extra.get("seed") == 42
+

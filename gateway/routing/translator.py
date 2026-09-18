@@ -137,7 +137,7 @@ def translate_request_to_anthropic(openai_payload: dict) -> dict:
         role = msg.get("role", "")
         content = msg.get("content", "")
 
-        if role == "system":
+        if role in ("system", "developer"):
             # Handle both string content and list content blocks
             if isinstance(content, str):
                 system_parts.append(content)
@@ -158,25 +158,61 @@ def translate_request_to_anthropic(openai_payload: dict) -> dict:
                         text_parts.append(block.get("text", ""))
                     elif isinstance(block, str):
                         text_parts.append(block)
-                non_system_messages.append({
-                    "role": role,
-                    "content": " ".join(text_parts) if text_parts else "",
-                })
+                formatted_content = " ".join(text_parts) if text_parts else ""
             else:
-                non_system_messages.append({
-                    "role": role,
-                    "content": content if content is not None else "",
-                })
+                formatted_content = content if content is not None else ""
+
+            # Map tool/function roles to user for Anthropic compatibility
+            msg_role = role
+            if msg_role in ("tool", "function"):
+                msg_role = "user"
+                formatted_content = f"[Tool output]: {formatted_content}"
+
+            non_system_messages.append({
+                "role": msg_role,
+                "content": formatted_content,
+            })
+
+    # ── Normalize messages for Anthropic API requirements ──
+    # 1. Anthropic requires the first message to have role: 'user'
+    # 2. Roles must strictly alternate between 'user' and 'assistant'
+    # 3. At least one message must be present
+    consolidated_messages: list[dict[str, str]] = []
+    for msg in non_system_messages:
+        r = msg["role"]
+        c = msg["content"]
+        if not consolidated_messages:
+            if r == "assistant":
+                # Prepend a user prompt if conversation starts with assistant
+                consolidated_messages.append({"role": "user", "content": "Hello"})
+            consolidated_messages.append({"role": r, "content": c})
+        else:
+            prev = consolidated_messages[-1]
+            if prev["role"] == r:
+                # Merge consecutive turns of the same role
+                prev["content"] = f"{prev['content']}\n\n{c}" if prev["content"] else c
+            else:
+                consolidated_messages.append({"role": r, "content": c})
+
+    if not consolidated_messages:
+        consolidated_messages.append({"role": "user", "content": "Hello"})
 
     # ── Resolve model name ──
     model_name = openai_payload.get("model", "")
     anthropic_model = resolve_model(model_name)
 
+    # Max tokens: check max_tokens first, then modern max_completion_tokens
+    max_tokens = (
+        openai_payload.get("max_tokens")
+        or openai_payload.get("max_completion_tokens")
+        or DEFAULT_MAX_TOKENS
+    )
+
     # ── Build Anthropic payload ──
     anthropic_payload: dict[str, Any] = {
         "model": anthropic_model,
-        "messages": non_system_messages,
-        "max_tokens": openai_payload.get("max_tokens") or DEFAULT_MAX_TOKENS,
+        "messages": consolidated_messages,
+        "max_tokens": max_tokens,
     }
 
     # Add system prompt if present

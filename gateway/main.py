@@ -41,10 +41,22 @@ from gateway.routing.circuit_breaker import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title="Aperture AI Gateway",
     description="Enterprise AI Gateway & Spend Management Platform",
     version="0.1.0",
+)
+
+# Enable CORS for dashboards, playgrounds, and web apps
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Request-ID", "X-Latency-Ms"],
 )
 
 
@@ -79,6 +91,40 @@ async def health():
         "status": "ok",
         "circuit_breaker": anthropic_breaker.get_status(),
     }
+
+
+# ──────────────────────────────────────────────
+# Models listing endpoint — OpenAI-compatible
+# ──────────────────────────────────────────────
+@app.get("/v1/models")
+async def list_models():
+    """
+    OpenAI-compatible models discovery endpoint.
+    Allows SDKs, Cursor, Continue, and dashboards to list available models.
+    """
+    from gateway.routing.translator import MODEL_MAP
+    model_list = []
+    seen = set()
+    for alias in MODEL_MAP.keys():
+        if alias not in seen:
+            model_list.append({
+                "id": alias,
+                "object": "model",
+                "created": 1700000000,
+                "owned_by": "aperture",
+            })
+            seen.add(alias)
+    for target in MODEL_MAP.values():
+        if target not in seen:
+            model_list.append({
+                "id": target,
+                "object": "model",
+                "created": 1700000000,
+                "owned_by": "anthropic",
+            })
+            seen.add(target)
+
+    return {"object": "list", "data": model_list}
 
 
 # ──────────────────────────────────────────────

@@ -390,3 +390,87 @@ class TestTranslateErrorFromAnthropic:
         result, status = translate_error_from_anthropic(error, 500)
         assert status == 500
         assert result["error"]["type"] == "server_error"
+
+
+class TestEdgeCaseTranslations:
+    """Tests for tricky edge cases in translate_request_to_anthropic."""
+
+    def test_developer_role_extracted_as_system(self):
+        """OpenAI 'developer' role is extracted to top-level 'system'."""
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "developer", "content": "Formatting rules."},
+                {"role": "user", "content": "Hi"},
+            ],
+        }
+        result = translate_request_to_anthropic(payload)
+        assert result["system"] == "Formatting rules."
+        assert len(result["messages"]) == 1
+        assert result["messages"][0]["role"] == "user"
+
+    def test_tool_role_mapped_to_user(self):
+        """OpenAI 'tool' role is safely mapped to 'user' for Anthropic."""
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "user", "content": "What is the weather?"},
+                {"role": "assistant", "content": "Checking..."},
+                {"role": "tool", "content": "Sunny, 72F"},
+            ],
+        }
+        result = translate_request_to_anthropic(payload)
+        assert result["messages"][2]["role"] == "user"
+        assert "[Tool output]: Sunny, 72F" in result["messages"][2]["content"]
+
+    def test_consecutive_same_role_messages_consolidated(self):
+        """Consecutive messages of same role are merged to satisfy Anthropic."""
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "user", "content": "Part 1."},
+                {"role": "user", "content": "Part 2."},
+            ],
+        }
+        result = translate_request_to_anthropic(payload)
+        assert len(result["messages"]) == 1
+        assert result["messages"][0]["role"] == "user"
+        assert "Part 1.\n\nPart 2." in result["messages"][0]["content"]
+
+    def test_first_message_assistant_prepends_user(self):
+        """If conversation starts with assistant, a user message is prepended."""
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "assistant", "content": "How can I help?"},
+                {"role": "user", "content": "I need help with python."},
+            ],
+        }
+        result = translate_request_to_anthropic(payload)
+        assert result["messages"][0]["role"] == "user"
+        assert result["messages"][1]["role"] == "assistant"
+        assert result["messages"][2]["role"] == "user"
+
+    def test_system_only_messages_adds_user_turn(self):
+        """If only system messages are passed, a default user turn is provided."""
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "system", "content": "You are a calculator."},
+            ],
+        }
+        result = translate_request_to_anthropic(payload)
+        assert result["system"] == "You are a calculator."
+        assert len(result["messages"]) == 1
+        assert result["messages"][0]["role"] == "user"
+
+    def test_max_completion_tokens_honored(self):
+        """OpenAI's modern max_completion_tokens is supported."""
+        payload = {
+            "model": "gpt-4o",
+            "messages": [{"role": "user", "content": "Hi"}],
+            "max_completion_tokens": 1234,
+        }
+        result = translate_request_to_anthropic(payload)
+        assert result["max_tokens"] == 1234
+

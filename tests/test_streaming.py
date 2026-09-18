@@ -253,6 +253,43 @@ class TestCallAnthropicStreaming:
             assert "data: [DONE]" in full_stream
             assert anthropic_breaker.failure_count == 1
 
+    @pytest.mark.asyncio
+    async def test_streaming_client_disconnect(self):
+        """When client disconnects (GeneratorExit), partial status is published."""
+        req = _make_dummy_request()
+
+        async def mock_aiter_lines():
+            yield "event: content_block_delta\n"
+            yield 'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Partial text"}}\n'
+            # Client disconnects: generator is closed
+            raise GeneratorExit()
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.aiter_lines = mock_aiter_lines
+
+        stream_context = AsyncMock()
+        stream_context.__aenter__.return_value = mock_resp
+        stream_context.__aexit__.return_value = None
+
+        with patch("httpx.AsyncClient.stream", return_value=stream_context), \
+             patch("gateway.routing.streaming.publish_usage_event", new_callable=AsyncMock) as mock_pub:
+            streaming_resp = await call_anthropic_streaming(
+                req, {"model": "claude-sonnet-4-6", "messages": []}, "gpt-4o"
+            )
+
+            try:
+                async for _ in streaming_resp.body_iterator:
+                    pass
+            except GeneratorExit:
+                pass
+
+            mock_pub.assert_called_once()
+            event = mock_pub.call_args[0][0]
+            assert event["status"] == "partial"
+            assert event["completion_tokens"] > 0
+
+
 
 class TestSafeEventPublishing:
     @pytest.mark.asyncio
