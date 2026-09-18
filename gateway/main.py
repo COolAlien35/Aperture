@@ -21,6 +21,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import redis.asyncio as redis
 import os
+import boto3
 from contextlib import asynccontextmanager
 
 from gateway.middleware.auth import auth_middleware
@@ -34,6 +35,16 @@ async def lifespan(app: FastAPI):
     # Initialize Redis connection pool
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     app.state.redis = redis.from_url(redis_url, decode_responses=True)
+    
+    # Initialize DynamoDB client (Team C dependency)
+    dynamodb_endpoint = os.getenv("DYNAMODB_URL", "http://localhost:8000")
+    app.state.dynamo = boto3.client(
+        'dynamodb',
+        endpoint_url=dynamodb_endpoint,
+        region_name='us-east-1',
+        aws_access_key_id='DUMMYIDEXAMPLE',
+        aws_secret_access_key='DUMMYEXAMPLEKEY'
+    )
     
     # Load Lua budget script
     script_path = os.path.join(os.path.dirname(__file__), "redis_scripts", "budget_script.lua")

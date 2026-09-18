@@ -16,22 +16,12 @@ async def auth_middleware(request: Request) -> Request:
 
     key_id = auth_header.split(" ")[1]
 
-    # For local testing, we might not have a DynamoDB client ready from Team C.
-    # We will pass None or a mock to DynamoDB if it doesn't exist in state.
+    # Use the real clients initialized in lifespan
     redis_client = getattr(request.app.state, "redis", None)
-    dynamo_client = getattr(request.app.state, "dynamo", None) # Team C will attach this
+    dynamo_client = getattr(request.app.state, "dynamo", None) 
     
-    # We use a MagicMock for dynamo if not available, just to keep local tests running until C finishes.
     if dynamo_client is None:
-        from unittest.mock import MagicMock
-        dynamo_client = MagicMock()
-        dynamo_client.get_item.return_value = {
-            "Item": {
-                "team_id": {"S": "test_team"},
-                "role": {"S": "Admin"},
-                "status": {"S": "active"}
-            }
-        }
+        raise HTTPException(status_code=500, detail="DynamoDB client not initialized")
 
     try:
         metadata = await get_key_metadata(redis_client, dynamo_client, "KeysTable", key_id)
