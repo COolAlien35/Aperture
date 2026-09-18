@@ -3,6 +3,7 @@ Gateway configuration — loads environment variables for all services.
 
 Used by: everyone (Person A, B, C)
 """
+
 import os
 from dotenv import load_dotenv
 

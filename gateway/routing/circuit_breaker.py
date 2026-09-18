@@ -11,13 +11,14 @@ Per design decision #3:
 
 See: Task 5 in PERSON_A_TASKS.md
 """
+
 import enum
 import time
 
 
 class CircuitState(enum.Enum):
-    CLOSED = "closed"        # Normal — routing to primary provider
-    OPEN = "open"            # Failing over — routing to fallback provider
+    CLOSED = "closed"  # Normal — routing to primary provider
+    OPEN = "open"  # Failing over — routing to fallback provider
     HALF_OPEN = "half_open"  # Testing — allowing 1 test request to primary
 
 

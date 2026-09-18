@@ -6,6 +6,7 @@ This middleware resolves who is calling and attaches identity to request.state.
 
 Runs AFTER request_id generation, BEFORE budget_check_middleware.
 """
+
 from fastapi import Request
 
 

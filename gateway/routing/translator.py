@@ -7,7 +7,6 @@ and translates Anthropic responses back to OpenAI-compatible format.
 See: Task 3 in PERSON_A_TASKS.md
 """
 
-
 # Model alias mapping — agree with team before locking in
 MODEL_MAP: dict[str, str] = {
     "gpt-4o": "claude-sonnet-4-6",
@@ -26,7 +25,9 @@ def translate_request_to_anthropic(openai_payload: dict) -> dict:
     - Default max_tokens to 4096 if not set (decision #1)
     - Pass stream field through directly
     """
-    raise NotImplementedError("Task 3 — implement OpenAI -> Anthropic request translation")
+    raise NotImplementedError(
+        "Task 3 — implement OpenAI -> Anthropic request translation"
+    )
 
 
 def translate_response_from_anthropic(anthropic_response: dict) -> dict:
@@ -40,4 +41,6 @@ def translate_response_from_anthropic(anthropic_response: dict) -> dict:
     - Map stop_reason -> finish_reason
     - Handle error responses too
     """
-    raise NotImplementedError("Task 3 — implement Anthropic -> OpenAI response translation")
+    raise NotImplementedError(
+        "Task 3 — implement Anthropic -> OpenAI response translation"
+    )

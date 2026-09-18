@@ -10,6 +10,7 @@ Per design decision #7:
 - Wrapped in try/except — silently drops on failure
 - Dropped events are accepted as lost (no local retry buffer for hackathon)
 """
+
 import logging
 from typing import Any
 
@@ -43,4 +44,6 @@ async def publish_usage_event(event: dict[str, Any]) -> None:
 
     Currently: logs the event and returns (no-op).
     """
-    logger.info(f"[STUB] Would publish usage event: request_id={event.get('request_id')}")
+    logger.info(
+        f"[STUB] Would publish usage event: request_id={event.get('request_id')}"
+    )
