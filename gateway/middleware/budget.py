@@ -31,6 +31,15 @@ async def budget_check_middleware(request: Request) -> Request:
     redis_client = getattr(request.app.state, "redis", None)
     script_sha = getattr(request.app.state, "budget_script_sha", None)
 
+    team_budget_limit = TEAM_BUDGET_LIMIT
+    if redis_client:
+        try:
+            dynamic_limit = await redis_client.get(f"budget:limit:{team_id}")
+            if dynamic_limit:
+                team_budget_limit = float(dynamic_limit)
+        except Exception as e:
+            logger.warning(f"Failed to fetch dynamic limit for team {team_id}: {e}")
+
     if redis_client and script_sha:
         current_month = datetime.now(timezone.utc).strftime("%Y-%m")
         usage_key = f"usage:{team_id}:{current_month}"
@@ -43,7 +52,7 @@ async def budget_check_middleware(request: Request) -> Request:
                 usage_key,
                 "RESERVE",
                 str(estimated_cost),
-                str(TEAM_BUDGET_LIMIT),
+                str(team_budget_limit),
             )
 
             if result == 0:

@@ -64,7 +64,9 @@ async def run_tests():
     try:
         await producer.start()
         partitions = await producer.partitions_for(TOPIC)
-        assert partitions is not None, "partitions_for() returned None — topic may not exist"
+        assert (
+            partitions is not None
+        ), "partitions_for() returned None — topic may not exist"
         print(f"  ✅ Connected. Partitions for '{TOPIC}': {sorted(partitions)}")
     except Exception as exc:
         errors.append(f"Loop 1: {exc}")
@@ -78,7 +80,9 @@ async def run_tests():
     sent_ids = []
     for i, event in enumerate(events):
         try:
-            meta = await producer.send_and_wait(TOPIC, value=event, key=event["team_id"])
+            meta = await producer.send_and_wait(
+                TOPIC, value=event, key=event["team_id"]
+            )
             sent_ids.append(event["request_id"])
             print(
                 f"  ✅ Sent [{i+1}/3] request_id={event['request_id']} "
@@ -108,7 +112,9 @@ async def run_tests():
             rid = payload.get("request_id", "")
             if rid in sent_ids:
                 received[rid] = payload
-                print(f"  📨 Received request_id={rid} partition={msg.partition} offset={msg.offset}")
+                print(
+                    f"  📨 Received request_id={rid} partition={msg.partition} offset={msg.offset}"
+                )
             if len(received) >= len(sent_ids):
                 break
     except Exception as exc:
@@ -120,9 +126,17 @@ async def run_tests():
     # ── Loop 4: Verify payload field correctness ──────────────
     print("\n🔍 Loop 4: Payload field-level verification")
     REQUIRED_FIELDS = [
-        "request_id", "key_id", "team_id", "model",
-        "prompt_tokens", "completion_tokens", "total_tokens",
-        "estimated_cost_usd", "actual_cost_usd", "status", "timestamp",
+        "request_id",
+        "key_id",
+        "team_id",
+        "model",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "estimated_cost_usd",
+        "actual_cost_usd",
+        "status",
+        "timestamp",
     ]
     for rid in sent_ids:
         payload = received.get(rid)
@@ -139,9 +153,9 @@ async def run_tests():
 
         # Verify totals
         expected_total = payload["prompt_tokens"] + payload["completion_tokens"]
-        assert payload["total_tokens"] == expected_total, (
-            f"total_tokens mismatch: {payload['total_tokens']} != {expected_total}"
-        )
+        assert (
+            payload["total_tokens"] == expected_total
+        ), f"total_tokens mismatch: {payload['total_tokens']} != {expected_total}"
         # Verify team_id matches source event
         orig = next(e for e in events if e["request_id"] == rid)
         assert payload["team_id"] == orig["team_id"], "team_id mismatch"

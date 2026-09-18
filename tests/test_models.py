@@ -119,4 +119,3 @@ class TestModels:
         assert req.max_completion_tokens == 2048
         assert req.model_extra.get("user") == "org-user-99"
         assert req.model_extra.get("seed") == 42
-

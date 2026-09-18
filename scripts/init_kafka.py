@@ -22,7 +22,9 @@ from aiokafka.errors import TopicAlreadyExistsError
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
-KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9093")  # 9093 = EXTERNAL listener (host access)
+KAFKA_BROKER = os.getenv(
+    "KAFKA_BROKER", "localhost:9093"
+)  # 9093 = EXTERNAL listener (host access)
 USAGE_TOPIC_NAME = os.getenv("KAFKA_USAGE_TOPIC", "aperture.usage-events")
 DEFAULT_PARTITIONS = 3
 DEFAULT_REPLICATION = 1
@@ -52,7 +54,9 @@ async def create_usage_topic(
         if topic_name in existing_topics:
             print(f"✅  Topic '{topic_name}' already exists.")
         else:
-            print(f"🔨  Creating topic '{topic_name}' (partitions={num_partitions}, rep={replication_factor})...")
+            print(
+                f"🔨  Creating topic '{topic_name}' (partitions={num_partitions}, rep={replication_factor})..."
+            )
             new_topic = NewTopic(
                 name=topic_name,
                 num_partitions=num_partitions,
@@ -76,12 +80,16 @@ async def create_usage_topic(
             print("\n📋  Topic Metadata Verification:")
             print(f"    - Name:               {topic_name}")
             print(f"    - Partition Count:    {len(partitions)}")
-            print(f"    - Leader Partition 0: Node {partitions[0].get('leader') if partitions else 'N/A'}")
+            print(
+                f"    - Leader Partition 0: Node {partitions[0].get('leader') if partitions else 'N/A'}"
+            )
             print(f"    - Retention Policy:   7 days ({RETENTION_MS} ms)")
             print(f"    - Status:             HEALTHY / READY FOR EVENTS")
 
         print("\n" + "=" * 65)
-        print("🎉  Kafka topic setup complete! Ready for Producer (A) and Consumer (C).")
+        print(
+            "🎉  Kafka topic setup complete! Ready for Producer (A) and Consumer (C)."
+        )
         print("=" * 65)
         return True
 

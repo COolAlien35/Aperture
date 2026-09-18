@@ -84,8 +84,11 @@ class TestCallAnthropicNonStreaming:
         mock_resp.status_code = 200
         mock_resp.json.return_value = mock_resp_data
 
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post, \
-             patch("gateway.routing.streaming.publish_usage_event", new_callable=AsyncMock) as mock_pub:
+        with patch(
+            "httpx.AsyncClient.post", new_callable=AsyncMock
+        ) as mock_post, patch(
+            "gateway.routing.streaming.publish_usage_event", new_callable=AsyncMock
+        ) as mock_pub:
             mock_post.return_value = mock_resp
 
             res = await call_anthropic_non_streaming(
@@ -128,7 +131,10 @@ class TestCallAnthropicNonStreaming:
     @pytest.mark.asyncio
     async def test_connect_error(self):
         req = _make_dummy_request()
-        with patch("httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")):
+        with patch(
+            "httpx.AsyncClient.post",
+            side_effect=httpx.ConnectError("Connection refused"),
+        ):
             res = await call_anthropic_non_streaming(
                 req, {"model": "claude-sonnet-4-6", "messages": []}, "gpt-4o"
             )
@@ -139,7 +145,9 @@ class TestCallAnthropicNonStreaming:
     @pytest.mark.asyncio
     async def test_timeout_error(self):
         req = _make_dummy_request()
-        with patch("httpx.AsyncClient.post", side_effect=httpx.TimeoutException("Timed out")):
+        with patch(
+            "httpx.AsyncClient.post", side_effect=httpx.TimeoutException("Timed out")
+        ):
             res = await call_anthropic_non_streaming(
                 req, {"model": "claude-sonnet-4-6", "messages": []}, "gpt-4o"
             )
@@ -214,7 +222,9 @@ class TestCallAnthropicStreaming:
 
         mock_resp = MagicMock()
         mock_resp.status_code = 500
-        mock_resp.aread = AsyncMock(return_value=b'{"error":{"type":"api_error","message":"Overloaded"}}')
+        mock_resp.aread = AsyncMock(
+            return_value=b'{"error":{"type":"api_error","message":"Overloaded"}}'
+        )
 
         stream_context = AsyncMock()
         stream_context.__aenter__.return_value = mock_resp
@@ -239,7 +249,9 @@ class TestCallAnthropicStreaming:
         req = _make_dummy_request()
         anthropic_breaker.reset()
 
-        with patch("httpx.AsyncClient.stream", side_effect=httpx.ConnectError("Unreachable")):
+        with patch(
+            "httpx.AsyncClient.stream", side_effect=httpx.ConnectError("Unreachable")
+        ):
             streaming_resp = await call_anthropic_streaming(
                 req, {"model": "claude-sonnet-4-6", "messages": []}, "gpt-4o"
             )
@@ -272,8 +284,9 @@ class TestCallAnthropicStreaming:
         stream_context.__aenter__.return_value = mock_resp
         stream_context.__aexit__.return_value = None
 
-        with patch("httpx.AsyncClient.stream", return_value=stream_context), \
-             patch("gateway.routing.streaming.publish_usage_event", new_callable=AsyncMock) as mock_pub:
+        with patch("httpx.AsyncClient.stream", return_value=stream_context), patch(
+            "gateway.routing.streaming.publish_usage_event", new_callable=AsyncMock
+        ) as mock_pub:
             streaming_resp = await call_anthropic_streaming(
                 req, {"model": "claude-sonnet-4-6", "messages": []}, "gpt-4o"
             )
@@ -290,12 +303,13 @@ class TestCallAnthropicStreaming:
             assert event["completion_tokens"] > 0
 
 
-
 class TestSafeEventPublishing:
     @pytest.mark.asyncio
     async def test_publish_event_safe_success(self):
         req = _make_dummy_request()
-        with patch("gateway.routing.streaming.publish_usage_event", new_callable=AsyncMock) as mock_pub:
+        with patch(
+            "gateway.routing.streaming.publish_usage_event", new_callable=AsyncMock
+        ) as mock_pub:
             await _publish_event_safe(
                 request=req,
                 original_model="gpt-4o",
@@ -316,7 +330,10 @@ class TestSafeEventPublishing:
     @pytest.mark.asyncio
     async def test_publish_event_safe_swallows_exception(self):
         req = _make_dummy_request()
-        with patch("gateway.routing.streaming.publish_usage_event", side_effect=Exception("Kafka unavailable")):
+        with patch(
+            "gateway.routing.streaming.publish_usage_event",
+            side_effect=Exception("Kafka unavailable"),
+        ):
             # Must not raise
             await _publish_event_safe(
                 request=req,

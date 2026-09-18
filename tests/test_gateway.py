@@ -16,6 +16,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 import pytest
 from starlette.testclient import TestClient
 
+
 # We must mock the middlewares before importing `app` because they get registered
 # or we can patch them in `gateway.main` directly.
 @pytest.fixture(autouse=True)
@@ -27,14 +28,17 @@ def mock_middlewares():
         req.state.reserved = True
         return req
 
-    with patch("gateway.main.auth_middleware", new=mock_pass_through), \
-         patch("gateway.main.budget_check_middleware", new=mock_pass_through):
+    with patch("gateway.main.auth_middleware", new=mock_pass_through), patch(
+        "gateway.main.budget_check_middleware", new=mock_pass_through
+    ):
         yield
+
 
 from gateway.main import app
 from gateway.routing.circuit_breaker import anthropic_breaker, CircuitState
 
 client = TestClient(app)
+
 
 def setup_function():
     """Reset circuit breaker state before each test."""
@@ -143,18 +147,32 @@ def test_circuit_breaker_routes_to_fallback():
     anthropic_breaker.state = CircuitState.OPEN
     anthropic_breaker.failure_count = 3
     import time
+
     anthropic_breaker.last_failure_time = time.time()
 
-    with patch("gateway.main.call_openai_fallback", new_callable=AsyncMock) as mock_fallback:
+    with patch(
+        "gateway.main.call_openai_fallback", new_callable=AsyncMock
+    ) as mock_fallback:
         from fastapi.responses import JSONResponse
+
         mock_fallback.return_value = JSONResponse(
             content={
                 "id": "chatcmpl-fallback-test",
                 "object": "chat.completion",
                 "created": 123456,
                 "model": "gpt-4o",
-                "choices": [{"index": 0, "message": {"role": "assistant", "content": "OpenAI fallback"}, "finish_reason": "stop"}],
-                "usage": {"prompt_tokens": 5, "completion_tokens": 5, "total_tokens": 10},
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": "OpenAI fallback"},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 5,
+                    "completion_tokens": 5,
+                    "total_tokens": 10,
+                },
             }
         )
 
@@ -178,14 +196,16 @@ def test_chat_completions_streaming_endpoint():
 
     async def dummy_generator():
         yield 'data: {"id":"chatcmpl-1","choices":[{"delta":{"content":"Hi"}}]}\n\n'
-        yield 'data: [DONE]\n\n'
+        yield "data: [DONE]\n\n"
 
     mock_streaming_resp = StreamingResponse(
         dummy_generator(),
         media_type="text/event-stream",
     )
 
-    with patch("gateway.main.call_anthropic_streaming", new_callable=AsyncMock) as mock_stream:
+    with patch(
+        "gateway.main.call_anthropic_streaming", new_callable=AsyncMock
+    ) as mock_stream:
         mock_stream.return_value = mock_streaming_resp
 
         response = client.post(
@@ -227,7 +247,8 @@ def test_cors_headers():
         },
     )
     assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") in ("*", "http://localhost:3000")
+    assert response.headers.get("access-control-allow-origin") in (
+        "*",
+        "http://localhost:3000",
+    )
     assert "POST" in response.headers.get("access-control-allow-methods", "")
-
-

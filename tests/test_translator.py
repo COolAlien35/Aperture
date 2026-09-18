@@ -18,7 +18,6 @@ from gateway.routing.translator import (
 )
 from gateway.config import DEFAULT_MAX_TOKENS
 
-
 # ──────────────────────────────────────────────
 # Request translation tests
 # ──────────────────────────────────────────────
@@ -31,9 +30,7 @@ class TestTranslateRequestToAnthropic:
         """Basic request with user message translates correctly."""
         payload = {
             "model": "gpt-4o",
-            "messages": [
-                {"role": "user", "content": "Hello, world!"}
-            ],
+            "messages": [{"role": "user", "content": "Hello, world!"}],
         }
         result = translate_request_to_anthropic(payload)
 
@@ -225,9 +222,7 @@ class TestTranslateResponseFromAnthropic:
             "type": "message",
             "role": "assistant",
             "model": "claude-sonnet-4-6",
-            "content": [
-                {"type": "text", "text": "Hello! How can I help?"}
-            ],
+            "content": [{"type": "text", "text": "Hello! How can I help?"}],
             "stop_reason": "end_turn",
             "usage": {
                 "input_tokens": 15,
@@ -277,10 +272,7 @@ class TestTranslateResponseFromAnthropic:
             "usage": {"input_tokens": 5, "output_tokens": 10},
         }
         result = translate_response_from_anthropic(anthropic_resp)
-        assert (
-            result["choices"][0]["message"]["content"]
-            == "First part. Second part."
-        )
+        assert result["choices"][0]["message"]["content"] == "First part. Second part."
 
     def test_empty_content(self):
         """Empty content blocks produce empty content string."""
@@ -310,9 +302,7 @@ class TestTranslateResponseFromAnthropic:
             "stop_reason": "end_turn",
             "usage": {"input_tokens": 5, "output_tokens": 2},
         }
-        result = translate_response_from_anthropic(
-            anthropic_resp, "gpt-4o-mini"
-        )
+        result = translate_response_from_anthropic(anthropic_resp, "gpt-4o-mini")
         assert result["model"] == "gpt-4o-mini"
 
 
@@ -473,4 +463,3 @@ class TestEdgeCaseTranslations:
         }
         result = translate_request_to_anthropic(payload)
         assert result["max_tokens"] == 1234
-

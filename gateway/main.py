@@ -41,6 +41,7 @@ from gateway.routing.circuit_breaker import (
     anthropic_breaker,
     call_openai_fallback,
 )
+from gateway.routes.governance import router as governance_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -102,6 +103,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Request-ID", "X-Latency-Ms"],
 )
+
+app.include_router(governance_router)
 
 
 # ──────────────────────────────────────────────

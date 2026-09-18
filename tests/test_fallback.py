@@ -49,12 +49,15 @@ async def test_fallback_success():
     mock_resp.json.return_value = {
         "id": "chatcmpl-test",
         "object": "chat.completion",
-        "choices": [{"index": 0, "message": {"role": "assistant", "content": "From OpenAI"}}],
+        "choices": [
+            {"index": 0, "message": {"role": "assistant", "content": "From OpenAI"}}
+        ],
         "usage": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
     }
 
-    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), \
-         patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), patch(
+        "httpx.AsyncClient.post", new_callable=AsyncMock
+    ) as mock_post:
         mock_post.return_value = mock_resp
 
         res = await call_openai_fallback(req, {"model": "gpt-4o", "messages": []})
@@ -72,10 +75,13 @@ async def test_fallback_upstream_error():
     req = _make_dummy_request()
     mock_resp = MagicMock()
     mock_resp.status_code = 401
-    mock_resp.json.return_value = {"error": {"message": "Invalid API key", "type": "invalid_request_error"}}
+    mock_resp.json.return_value = {
+        "error": {"message": "Invalid API key", "type": "invalid_request_error"}
+    }
 
-    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), \
-         patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), patch(
+        "httpx.AsyncClient.post", new_callable=AsyncMock
+    ) as mock_post:
         mock_post.return_value = mock_resp
 
         res = await call_openai_fallback(req, {"model": "gpt-4o", "messages": []})
@@ -88,8 +94,9 @@ async def test_fallback_upstream_error():
 async def test_fallback_connect_error():
     """When connecting to OpenAI fails, returns 502."""
     req = _make_dummy_request()
-    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), \
-         patch("httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")):
+    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), patch(
+        "httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")
+    ):
         res = await call_openai_fallback(req, {"model": "gpt-4o", "messages": []})
         assert res.status_code == 502
         data = json.loads(res.body.decode("utf-8"))
@@ -100,8 +107,9 @@ async def test_fallback_connect_error():
 async def test_fallback_timeout_error():
     """When OpenAI request times out, returns 504."""
     req = _make_dummy_request()
-    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), \
-         patch("httpx.AsyncClient.post", side_effect=httpx.TimeoutException("Read timeout")):
+    with patch("gateway.routing.circuit_breaker.OPENAI_API_KEY", "sk-mock-key"), patch(
+        "httpx.AsyncClient.post", side_effect=httpx.TimeoutException("Read timeout")
+    ):
         res = await call_openai_fallback(req, {"model": "gpt-4o", "messages": []})
         assert res.status_code == 504
         data = json.loads(res.body.decode("utf-8"))
