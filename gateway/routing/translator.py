@@ -168,10 +168,12 @@ def translate_request_to_anthropic(openai_payload: dict) -> dict:
                 msg_role = "user"
                 formatted_content = f"[Tool output]: {formatted_content}"
 
-            non_system_messages.append({
-                "role": msg_role,
-                "content": formatted_content,
-            })
+            non_system_messages.append(
+                {
+                    "role": msg_role,
+                    "content": formatted_content,
+                }
+            )
 
     # ── Normalize messages for Anthropic API requirements ──
     # 1. Anthropic requires the first message to have role: 'user'
@@ -350,10 +352,13 @@ def translate_error_from_anthropic(
     error_message = error_body.get("message", "Unknown error from provider")
 
     # Look up the mapped error type and status
-    mapped = ANTHROPIC_ERROR_MAP.get(error_type, {
-        "type": "server_error",
-        "http_status": http_status,
-    })
+    mapped = ANTHROPIC_ERROR_MAP.get(
+        error_type,
+        {
+            "type": "server_error",
+            "http_status": http_status,
+        },
+    )
 
     openai_error = {
         "error": {

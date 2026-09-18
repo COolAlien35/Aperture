@@ -21,7 +21,7 @@ import json
 import time
 import uuid
 import logging
-from typing import Any, AsyncGenerator
+from typing import AsyncGenerator
 
 import httpx
 from fastapi import Request
@@ -41,9 +41,9 @@ ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 
 # Timeout settings for httpx
-CONNECT_TIMEOUT = 10.0      # seconds to establish connection
-READ_TIMEOUT = 120.0        # seconds to wait for streaming data
-WRITE_TIMEOUT = 10.0        # seconds for sending request
+CONNECT_TIMEOUT = 10.0  # seconds to establish connection
+READ_TIMEOUT = 120.0  # seconds to wait for streaming data
+WRITE_TIMEOUT = 10.0  # seconds for sending request
 
 _tokenizer = None
 
@@ -53,6 +53,7 @@ def _get_tokenizer():
     if _tokenizer is None:
         try:
             import tiktoken
+
             _tokenizer = tiktoken.get_encoding("cl100k_base")
         except Exception:
             _tokenizer = False
@@ -83,7 +84,6 @@ def _estimate_tokens_from_text(text: str) -> int:
         except Exception:
             pass
     return max(1, len(text) // 4)
-
 
 
 async def call_anthropic_non_streaming(
@@ -267,7 +267,10 @@ async def call_anthropic_streaming(
                     # ── Handle non-200 responses ──
                     if response.status_code != 200:
                         if response.status_code >= 500:
-                            from gateway.routing.circuit_breaker import anthropic_breaker
+                            from gateway.routing.circuit_breaker import (
+                                anthropic_breaker,
+                            )
+
                             anthropic_breaker.record_failure()
                         body = await response.aread()
                         try:
@@ -330,9 +333,7 @@ async def call_anthropic_streaming(
                             )
                             continue
 
-                        event_type = (
-                            data.get("type") or current_event_type or ""
-                        )
+                        event_type = data.get("type") or current_event_type or ""
 
                         # ── message_start ──
                         # First event: contains role and usage info
@@ -367,9 +368,7 @@ async def call_anthropic_streaming(
                                 # Track running token count
                                 estimated = _estimate_tokens_from_text(text)
                                 completion_tokens += estimated
-                                request.state.tokens_streamed_so_far = (
-                                    completion_tokens
-                                )
+                                request.state.tokens_streamed_so_far = completion_tokens
 
                                 chunk = {
                                     "id": response_id,
@@ -396,16 +395,13 @@ async def call_anthropic_streaming(
                             from gateway.routing.translator import (
                                 STOP_REASON_MAP,
                             )
-                            finish_reason = STOP_REASON_MAP.get(
-                                stop_reason, "stop"
-                            )
+
+                            finish_reason = STOP_REASON_MAP.get(stop_reason, "stop")
 
                             # Use accurate output tokens from the final event
                             if usage.get("output_tokens"):
                                 completion_tokens = usage["output_tokens"]
-                                request.state.tokens_streamed_so_far = (
-                                    completion_tokens
-                                )
+                                request.state.tokens_streamed_so_far = completion_tokens
 
                             chunk = {
                                 "id": response_id,
@@ -422,9 +418,7 @@ async def call_anthropic_streaming(
                                 "usage": {
                                     "prompt_tokens": prompt_tokens,
                                     "completion_tokens": completion_tokens,
-                                    "total_tokens": (
-                                        prompt_tokens + completion_tokens
-                                    ),
+                                    "total_tokens": (prompt_tokens + completion_tokens),
                                 },
                             }
                             yield f"data: {json.dumps(chunk)}\n\n"
@@ -434,12 +428,16 @@ async def call_anthropic_streaming(
                         elif event_type == "message_stop":
                             yield "data: [DONE]\n\n"
                             stream_status = "success"
-                            from gateway.routing.circuit_breaker import anthropic_breaker
+                            from gateway.routing.circuit_breaker import (
+                                anthropic_breaker,
+                            )
+
                             anthropic_breaker.record_success()
 
         except httpx.ConnectError as e:
             logger.error(f"Failed to connect to Anthropic (streaming): {e}")
             from gateway.routing.circuit_breaker import anthropic_breaker
+
             anthropic_breaker.record_failure()
             error_chunk = {
                 "id": response_id,
@@ -466,6 +464,7 @@ async def call_anthropic_streaming(
         except httpx.TimeoutException as e:
             logger.error(f"Timeout streaming from Anthropic: {e}")
             from gateway.routing.circuit_breaker import anthropic_breaker
+
             anthropic_breaker.record_failure()
             stream_status = "error"
             yield "data: [DONE]\n\n"
@@ -549,7 +548,7 @@ async def _publish_event_safe(
             "completion_tokens": completion_tokens,
             "total_tokens": prompt_tokens + completion_tokens,
             "estimated_cost_usd": 0.0,  # TODO: compute from pricing table
-            "actual_cost_usd": 0.0,     # TODO: compute from pricing table
+            "actual_cost_usd": 0.0,  # TODO: compute from pricing table
             "status": status,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }

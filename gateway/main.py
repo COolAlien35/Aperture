@@ -21,13 +21,13 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from gateway.middleware.auth import auth_middleware
 from gateway.middleware.budget import budget_check_middleware
 from gateway.models import ChatCompletionRequest
 from gateway.routing.translator import (
     translate_request_to_anthropic,
-    translate_error_from_anthropic,
 )
 from gateway.routing.streaming import (
     call_anthropic_non_streaming,
@@ -103,25 +103,30 @@ async def list_models():
     Allows SDKs, Cursor, Continue, and dashboards to list available models.
     """
     from gateway.routing.translator import MODEL_MAP
+
     model_list = []
     seen = set()
     for alias in MODEL_MAP.keys():
         if alias not in seen:
-            model_list.append({
-                "id": alias,
-                "object": "model",
-                "created": 1700000000,
-                "owned_by": "aperture",
-            })
+            model_list.append(
+                {
+                    "id": alias,
+                    "object": "model",
+                    "created": 1700000000,
+                    "owned_by": "aperture",
+                }
+            )
             seen.add(alias)
     for target in MODEL_MAP.values():
         if target not in seen:
-            model_list.append({
-                "id": target,
-                "object": "model",
-                "created": 1700000000,
-                "owned_by": "anthropic",
-            })
+            model_list.append(
+                {
+                    "id": target,
+                    "object": "model",
+                    "created": 1700000000,
+                    "owned_by": "anthropic",
+                }
+            )
             seen.add(target)
 
     return {"object": "list", "data": model_list}

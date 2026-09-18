@@ -25,14 +25,14 @@ import httpx
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from gateway.config import ANTHROPIC_API_KEY, OPENAI_API_KEY
+from gateway.config import OPENAI_API_KEY
 
 logger = logging.getLogger(__name__)
 
 
 class CircuitState(enum.Enum):
-    CLOSED = "closed"       # Normal — routing to primary provider (Anthropic)
-    OPEN = "open"           # Failing over — routing to fallback (OpenAI)
+    CLOSED = "closed"  # Normal — routing to primary provider (Anthropic)
+    OPEN = "open"  # Failing over — routing to fallback (OpenAI)
     HALF_OPEN = "half_open"  # Testing — allowing 1 test request to primary
 
 
@@ -129,9 +129,7 @@ class CircuitBreaker:
         self.last_failure_time = time.time()
 
         if self.state == CircuitState.HALF_OPEN:
-            logger.warning(
-                "Circuit breaker: HALF_OPEN → OPEN (test request failed)"
-            )
+            logger.warning("Circuit breaker: HALF_OPEN → OPEN (test request failed)")
             self.state = CircuitState.OPEN
             self._half_open_in_progress = False
             return
@@ -194,9 +192,7 @@ async def call_openai_fallback(
         JSONResponse with the OpenAI response.
     """
     if not OPENAI_API_KEY:
-        logger.error(
-            "OpenAI fallback requested but OPENAI_API_KEY is not configured"
-        )
+        logger.error("OpenAI fallback requested but OPENAI_API_KEY is not configured")
         return JSONResponse(
             content={
                 "error": {
@@ -232,9 +228,7 @@ async def call_openai_fallback(
             response_data = response.json()
 
             if response.status_code != 200:
-                logger.warning(
-                    f"OpenAI fallback error: status={response.status_code}"
-                )
+                logger.warning(f"OpenAI fallback error: status={response.status_code}")
                 return JSONResponse(
                     content=response_data,
                     status_code=response.status_code,
@@ -242,9 +236,7 @@ async def call_openai_fallback(
 
             # Add aperture metadata
             response_data["_aperture"] = {
-                "request_id": getattr(
-                    request.state, "request_id", "unknown"
-                ),
+                "request_id": getattr(request.state, "request_id", "unknown"),
                 "provider": "openai",
                 "fallback": True,
             }
