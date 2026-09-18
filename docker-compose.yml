@@ -9,7 +9,7 @@
 #   gateway       → http://localhost:8080  (FastAPI AI gateway)
 #   redis         → localhost:6379         (budget enforcement)
 #   kafka         → localhost:9092         (usage event streaming)
-#   dynamodb-local→ localhost:8000         (keys, budgets, usage)
+#   dynamodb-local→ localhost:8001         (keys, budgets, usage)
 # ──────────────────────────────────────────────────────────────
 
 services:
@@ -94,9 +94,10 @@ services:
     image: amazon/dynamodb-local:latest
     container_name: aperture-dynamodb
     ports:
-      - "8000:8000"
+      - "8001:8000"    # Host 8001 → Container 8000 (8000 is taken by SSH tunnel on this machine)
     volumes:
       - dynamodb_data:/home/dynamodblocal/data
+    user: root
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
 
 volumes:
