@@ -1,0 +1,28 @@
+# ──────────────────────────────────────────────
+# Aperture AI Gateway — Python Dependencies
+# ──────────────────────────────────────────────
+# Add new dependencies as needed, then rebuild:
+#   docker-compose build gateway
+# ──────────────────────────────────────────────
+
+# Web framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# HTTP client (async streaming to LLM providers)
+httpx>=0.27.0
+
+# Data validation
+pydantic>=2.9.0
+
+# Redis (budget enforcement)
+redis>=5.0.0
+
+# Kafka (usage event producer)
+aiokafka>=0.11.0
+
+# Environment variable loading
+python-dotenv>=1.0.0
+
+# Tokenizer (for cost estimation)
+tiktoken>=0.7.0

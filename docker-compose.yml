@@ -1,0 +1,105 @@
+# ──────────────────────────────────────────────────────────────
+# Aperture AI Gateway — Docker Compose (Local Development)
+# ──────────────────────────────────────────────────────────────
+# Usage:
+#   cp .env.example .env     # fill in your API keys
+#   docker-compose up --build
+#
+# Services:
+#   gateway       → http://localhost:8080  (FastAPI AI gateway)
+#   redis         → localhost:6379         (budget enforcement)
+#   kafka         → localhost:9092         (usage event streaming)
+#   dynamodb-local→ localhost:8000         (keys, budgets, usage)
+# ──────────────────────────────────────────────────────────────
+
+services:
+  # ── FastAPI Gateway (Person A) ──────────────────────────────
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aperture-gateway
+    ports:
+      - "8080:8000"    # Host 8080 → Container 8000 (avoids DynamoDB port collision)
+    volumes:
+      - .:/app         # Hot-reload: code changes reflected without rebuild
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKER=kafka:9092
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+    depends_on:
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+      dynamodb-local:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Redis (Budget Enforcement Hot Path) ─────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: aperture-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Kafka in KRaft Mode (No Zookeeper) ──────────────────────
+  # Usage event streaming — Person C's consumer reads from here
+  # Using official Apache Kafka image (bitnami/kafka:latest no longer available)
+  kafka:
+    image: apache/kafka:latest
+    container_name: aperture-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # KRaft mode settings (no Zookeeper needed)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Listener configuration
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      # Single-node dev settings
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Required for KRaft — generate with kafka-storage.sh or use a fixed ID for dev
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM1Tk
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── DynamoDB Local (Keys, Budgets, Usage Aggregates) ────────
+  # Person B's key/budget storage, Person C's usage aggregates
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: aperture-dynamodb
+    ports:
+      - "8000:8000"
+    volumes:
+      - dynamodb_data:/home/dynamodblocal/data
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
+
+volumes:
+  redis_data:
+  dynamodb_data:
+
