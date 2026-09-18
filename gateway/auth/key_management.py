@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 KEY_PREFIX = "sk-gw-"
 CACHE_TTL_SECONDS = 60
 
+
 def generate_virtual_key() -> str:
     """
     Generates a secure virtual key for API access.
@@ -16,11 +17,9 @@ def generate_virtual_key() -> str:
     random_part = secrets.token_hex(32)
     return f"{KEY_PREFIX}{random_part}"
 
+
 async def get_key_metadata(
-    redis_client,
-    dynamodb_client,
-    table_name: str,
-    key_id: str
+    redis_client, dynamodb_client, table_name: str, key_id: str
 ) -> Optional[Dict[str, Any]]:
     """
     Validates a virtual key and retrieves its metadata (team_id, roles, budget context).
@@ -45,21 +44,18 @@ async def get_key_metadata(
         # Expected Schema: PK=KEY#<id>, SK=METADATA
         response = dynamodb_client.get_item(
             TableName=table_name,
-            Key={
-                'PK': {'S': f"KEY#{key_id}"},
-                'SK': {'S': "METADATA"}
-            }
+            Key={"PK": {"S": f"KEY#{key_id}"}, "SK": {"S": "METADATA"}},
         )
-        
-        item = response.get('Item')
+
+        item = response.get("Item")
         if not item:
             return None
-            
+
         # Parse DynamoDB Item into a standard dict
         metadata = {
             "team_id": item.get("team_id", {}).get("S"),
             "role": item.get("role", {}).get("S", "Developer"),
-            "status": item.get("status", {}).get("S", "active")
+            "status": item.get("status", {}).get("S", "active"),
         }
 
         if metadata["status"] != "active":
@@ -67,11 +63,7 @@ async def get_key_metadata(
 
         # 3. Populate Redis Cache
         try:
-            await redis_client.setex(
-                cache_key,
-                CACHE_TTL_SECONDS,
-                json.dumps(metadata)
-            )
+            await redis_client.setex(cache_key, CACHE_TTL_SECONDS, json.dumps(metadata))
         except Exception as e:
             logger.warning(f"Failed to populate Redis cache for key metadata: {e}")
 
