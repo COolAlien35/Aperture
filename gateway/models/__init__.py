@@ -7,7 +7,7 @@ are a shared contract. Do NOT rename without team agreement.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Any
 
 # ──────────────────────────────────────────────
@@ -16,14 +16,17 @@ from typing import Any
 
 
 class ChatMessage(BaseModel):
-    role: str  # "system" | "user" | "assistant"
-    content: str | list[Any]  # string or content blocks
+    model_config = ConfigDict(extra="allow")
+    role: str  # "system" | "user" | "assistant" | "developer" | "tool"
+    content: str | list[Any] | None = ""  # string, content blocks, or None
 
 
 class ChatCompletionRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
     model: str
     messages: list[ChatMessage]
     max_tokens: int | None = None
+    max_completion_tokens: int | None = None
     temperature: float | None = None
     top_p: float | None = None
     stream: bool = False
