@@ -32,15 +32,15 @@ Primary Key:
 ── Attribute Reference ──────────────────────────────────────────────────────
 
   KEY METADATA item:
-    key_id        str   sk-gw-<random>  — the virtual key value
-    team_id       str   e.g. "engineering"
-    role          str   "admin" | "team_lead" | "developer"
-    budget_limit  str   monthly limit in USD, e.g. "100.00"  (stored as str for DynamoDB precision)
-    is_active     bool  False = revoked key
-    created_at    str   ISO 8601
-    name          str   human-readable label, e.g. "Alice's cursor key"
-    GSI1PK        str   = team_id  (for team-level queries)
-    GSI1SK        str   = SK (METADATA)
+    key_id        str      sk-gw-<random>  — the virtual key value
+    team_id       str      e.g. "engineering"
+    role          str      "admin" | "team_lead" | "developer"
+    budget_limit  Decimal  monthly limit in USD, e.g. Decimal("100.00")  (Decimal for atomic math)
+    is_active     bool     False = revoked key
+    created_at    str      ISO 8601
+    name          str      human-readable label, e.g. "Alice's cursor key"
+    GSI1PK        str      = team_id  (for team-level queries)
+    GSI1SK        str      = SK (METADATA)
 
   USAGE LOG item:
     request_id       str

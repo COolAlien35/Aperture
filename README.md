@@ -169,11 +169,17 @@ aperture/
 │   └── models/              # Shared Pydantic models (everyone)
 │       └── schemas.py       # Request/response schemas + UsageEvent
 ├── consumer/                # Kafka consumer service (Person C)
+│   ├── Dockerfile           # Consumer container image
+│   ├── handler.py           # Idempotency check & DynamoDB 3-write handler
+│   └── main.py              # Async consumer loop & graceful shutdown
 ├── dashboard/               # React analytics dashboard (Person C)
 ├── scripts/                 # One-time setup & verification (Person C)
-│   ├── init_dynamodb.py     # Provision DynamoDB table & seed data
-│   └── test_schema_comprehensive.py  # 4-loop schema verification suite
-├── docker-compose.yml       # Local dev environment
+│   ├── init_dynamodb.py     # Provision DynamoDB table & seed data (Task 1)
+│   ├── init_kafka.py        # Provision Kafka topic & verify partitions (Task 2)
+│   ├── test_schema_comprehensive.py  # 4-loop schema verification suite (Task 1)
+│   ├── test_kafka.py        # 4-loop Kafka E2E producer/consumer test (Task 2)
+│   └── test_consumer.py     # 5-loop consumer integration test (Task 3)
+├── docker-compose.yml       # Local dev environment (gateway, kafka, dynamodb, consumer)
 ├── Dockerfile               # Gateway container image
 ├── .env.example             # Environment variable template
 └── requirements.txt         # Python dependencies

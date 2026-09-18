@@ -103,7 +103,32 @@ services:
     user: root
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
 
+  # ── Kafka Consumer (Person C) ────────────────────────────────
+  # Reads from aperture.usage-events, writes usage logs + spend aggregates to DynamoDB
+  consumer:
+    build:
+      context: .
+      dockerfile: consumer/Dockerfile
+    container_name: aperture-consumer
+    restart: unless-stopped
+    environment:
+      # Kafka — use INTERNAL listener (container-to-container)
+      KAFKA_BROKER: kafka:9092
+      KAFKA_USAGE_TOPIC: aperture.usage-events
+      KAFKA_GROUP_ID: aperture-consumer-group
+      CONSUMER_COMMIT_BATCH: "10"
+      # DynamoDB — container-to-container address
+      DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      DYNAMODB_TABLE: aperture_data
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    depends_on:
+      kafka:
+        condition: service_healthy
+      dynamodb-local:
+        condition: service_started
+
 volumes:
   redis_data:
   dynamodb_data:
-

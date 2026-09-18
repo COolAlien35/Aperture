@@ -25,7 +25,7 @@ Usage (from Person A's gateway after reconciliation):
       actual_cost_usd=0.0024,
       estimated_cost_usd=0.0025,
       status="success",
-      timestamp=datetime.utcnow().isoformat() + "Z",
+      timestamp=datetime.now(timezone.utc).isoformat(),
   )
   asyncio.create_task(publish_usage_event(event))  # fire-and-forget
 """
