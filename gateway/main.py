@@ -19,6 +19,7 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import redis.asyncio as redis
 import os
 import boto3
@@ -66,8 +67,20 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Aperture AI Gateway",
     description="Enterprise AI Gateway & Spend Management Platform",
-    version="0.1.0",
-    lifespan=lifespan,
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+
+# ──────────────────────────────────────────────
+# CORS Middleware
+# ──────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
