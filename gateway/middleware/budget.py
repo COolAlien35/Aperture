@@ -1,5 +1,7 @@
 from fastapi import Request, HTTPException
 import logging
+import time
+from datetime import datetime, timezone
 from gateway.budget.cost_estimation import estimate_cost
 
 logger = logging.getLogger(__name__)
@@ -27,7 +29,8 @@ async def budget_check_middleware(request: Request) -> Request:
     script_sha = getattr(request.app.state, "budget_script_sha", None)
 
     if redis_client and script_sha:
-        usage_key = f"usage:{team_id}"
+        current_month = datetime.now(timezone.utc).strftime('%Y-%m')
+        usage_key = f"usage:{team_id}:{current_month}"
         try:
             # KEYS[1], ARGV[1], ARGV[2], ARGV[3]
             # action = 'RESERVE', estimated_cost, budget_limit
@@ -43,11 +46,26 @@ async def budget_check_middleware(request: Request) -> Request:
             if result == 0:
                 raise HTTPException(status_code=402, detail="Team budget exceeded")
                 
+            # If successful, reset the failure timer
+            if getattr(request.app.state, "redis_down_since", None) is not None:
+                request.app.state.redis_down_since = None
+                
         except HTTPException:
             raise
         except Exception as e:
-            logger.warning(f"Redis budget check failed, failing open: {e}")
-            # Fail open if Redis is down
+            # Redis failed. Check the grace window.
+            now = time.time()
+            down_since = getattr(request.app.state, "redis_down_since", None)
+            
+            if down_since is None:
+                # First failure
+                request.app.state.redis_down_since = now
+                logger.warning(f"Redis budget check failed, starting 10s grace period: {e}")
+            elif (now - down_since) > 10:
+                logger.error("Redis has been down for > 10 seconds. Failing closed.")
+                raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+            else:
+                logger.warning(f"Redis down, failing open (grace period active): {e}")
     else:
         logger.warning("Redis client or Lua script not loaded, skipping budget check")
 

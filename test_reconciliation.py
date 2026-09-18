@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 import json
+from datetime import datetime, timezone
 
 from gateway.budget.reconciliation import (
     token_tracking_stream, 
@@ -71,10 +72,11 @@ class TestReconciliation(unittest.IsolatedAsyncioTestCase):
         expected_actual = calculate_actual_cost("gpt-3.5-turbo", 100, 8)
         expected_diff = expected_actual - 0.50
         
+        current_month = datetime.now(timezone.utc).strftime('%Y-%m')
         mock_redis.evalsha.assert_called_once_with(
             "dummy_sha_123", 
             1, 
-            "usage:test_team_99", 
+            f"usage:test_team_99:{current_month}", 
             'RECONCILE', 
             str(expected_diff)
         )
@@ -110,10 +112,11 @@ class TestReconciliation(unittest.IsolatedAsyncioTestCase):
         expected_actual = calculate_actual_cost("gpt-3.5-turbo", 100, 4)
         expected_diff = expected_actual - 1.00
         
+        current_month = datetime.now(timezone.utc).strftime('%Y-%m')
         mock_redis.evalsha.assert_called_once_with(
             "dummy_sha_123", 
             1, 
-            "usage:team_1", 
+            f"usage:team_1:{current_month}", 
             'RECONCILE', 
             str(expected_diff)
         )
@@ -140,10 +143,11 @@ class TestReconciliation(unittest.IsolatedAsyncioTestCase):
         expected_actual = calculate_actual_cost("gpt-4", 50, 0)
         expected_diff = expected_actual - 0.50
         
+        current_month = datetime.now(timezone.utc).strftime('%Y-%m')
         mock_redis.evalsha.assert_called_once_with(
             "dummy_sha_123", 
             1, 
-            "usage:team_1", 
+            f"usage:team_1:{current_month}", 
             'RECONCILE', 
             str(expected_diff)
         )

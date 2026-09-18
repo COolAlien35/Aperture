@@ -1,5 +1,6 @@
 import logging
 import json
+from datetime import datetime, timezone
 from typing import AsyncGenerator, Any
 from gateway.budget.cost_estimation import calculate_actual_cost
 
@@ -23,7 +24,8 @@ async def _run_redis_reconciliation(
     # If actual > estimated, this is positive (deduct more from budget).
     # If actual < estimated, this is negative (refund to budget).
     cost_difference = actual_cost - estimated_cost
-    usage_key = f"usage:{team_id}"
+    current_month = datetime.now(timezone.utc).strftime('%Y-%m')
+    usage_key = f"usage:{team_id}:{current_month}"
 
     try:
         await redis_client.evalsha(

@@ -16,11 +16,25 @@ from unittest.mock import patch, AsyncMock, MagicMock
 import pytest
 from starlette.testclient import TestClient
 
+# We must mock the middlewares before importing `app` because they get registered
+# or we can patch them in `gateway.main` directly.
+@pytest.fixture(autouse=True)
+def mock_middlewares():
+    async def mock_pass_through(req):
+        req.state.team_id = "test_team"
+        req.state.key_id = "test_key"
+        req.state.role = "admin"
+        req.state.reserved = True
+        return req
+
+    with patch("gateway.main.auth_middleware", new=mock_pass_through), \
+         patch("gateway.main.budget_check_middleware", new=mock_pass_through):
+        yield
+
 from gateway.main import app
 from gateway.routing.circuit_breaker import anthropic_breaker, CircuitState
 
 client = TestClient(app)
-
 
 def setup_function():
     """Reset circuit breaker state before each test."""
