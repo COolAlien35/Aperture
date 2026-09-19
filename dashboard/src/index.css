@@ -1049,6 +1049,171 @@ tbody tr:last-child td { border-bottom: none; }
 .text-mono { font-family: var(--font-mono); }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
 
+/* ---------- Workspace Switcher (Header) ---------- */
+.workspace-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 12px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.workspace-btn:hover { border-color: var(--border-active); background: var(--bg-surface-3); }
+.workspace-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.workspace-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  padding: 8px;
+  z-index: 200;
+}
+.workspace-dropdown-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 4px 8px 8px;
+}
+.workspace-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s;
+}
+.workspace-item:hover { background: var(--bg-surface-3); color: var(--text-primary); }
+.workspace-item.active { color: var(--brand-primary); font-weight: 600; }
+
+/* ---------- Environment Badge ---------- */
+.env-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--status-success);
+  letter-spacing: 0.3px;
+}
+.env-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-success);
+  box-shadow: 0 0 6px var(--status-success);
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+/* ---------- Header Icon Buttons ---------- */
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface-1);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  position: relative;
+}
+.header-icon-btn:hover { border-color: var(--border-active); color: var(--text-primary); background: var(--bg-surface-2); }
+
+.notif-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  box-shadow: 0 0 6px var(--brand-primary);
+}
+
+/* ---------- Spinner animation ---------- */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.animate-spin { animation: spin 1s linear infinite; }
+
+/* ---------- Portkey Stat Info Row (OverviewView top bar)----------- */
+.stats-info-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 20px;
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+}
+.stat-info-item { display: flex; flex-direction: column; gap: 1px; }
+.stat-info-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 700; color: var(--text-dim); }
+.stat-info-value { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); }
+.stat-info-divider { width: 1px; height: 28px; background: var(--border-subtle); flex-shrink: 0; }
+
+/* ---------- Portkey-style section header ---------- */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ---------- Budget team card header row ---------- */
+.budget-team-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ---------- Sidebar grouped sections ---------- */
+.sidebar-group { margin-bottom: 4px; }
+
+/* ---------- Metric icon color helper ---------- */
+.metric-icon { opacity: 0.8; flex-shrink: 0; }
+
+
 /* ============================================================
    PORTKEY.AI LOGIN PAGE & SPLIT-SCREEN AUTHENTICATION STYLES
    ============================================================ */

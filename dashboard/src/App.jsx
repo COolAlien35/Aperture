@@ -7,6 +7,7 @@ import KeysView from './views/KeysView.jsx';
 import BudgetsView from './views/BudgetsView.jsx';
 import GatewayView from './views/GatewayView.jsx';
 import LoginView from './views/LoginView.jsx';
+import ConfigView from './views/ConfigView.jsx';
 
 const VIEWS = {
   overview: OverviewView,
@@ -14,6 +15,7 @@ const VIEWS = {
   keys:     KeysView,
   budgets:  BudgetsView,
   gateway:  GatewayView,
+  config:   ConfigView,
 };
 
 const DEFAULT_USER = {

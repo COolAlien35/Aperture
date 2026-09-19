@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Activity,
   Server,
   Database,
   Radio,
@@ -10,16 +9,22 @@ import {
   Shield,
   ExternalLink,
   Sliders,
+  Bell,
+  BookOpen,
+  CheckCircle2,
 } from 'lucide-react';
 import ApertureLogo from './ApertureLogo.jsx';
 import { checkServiceHealth } from '../services/api.js';
 
-const TIME_FILTERS = ['24H', '7D', '30D', 'ALL'];
+const TIME_FILTERS = ['1H', '24H', '7D', '30D'];
 
 export default function Header({ timeFilter, onTimeFilter, user, onLogout, onNavigate }) {
   const [health, setHealth] = useState({ gateway: null, kafka: null, dynamodb: null });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [wsMenuOpen, setWsMenuOpen] = useState(false);
+  const [workspace, setWorkspace] = useState('Default Workspace');
   const menuRef = useRef(null);
+  const wsRef = useRef(null);
 
   useEffect(() => {
     const poll = async () => {
@@ -31,11 +36,14 @@ export default function Header({ timeFilter, onTimeFilter, user, onLogout, onNav
     return () => clearInterval(id);
   }, []);
 
-  // Close user menu on outside click
+  // Close menus on outside click
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setUserMenuOpen(false);
+      }
+      if (wsRef.current && !wsRef.current.contains(e.target)) {
+        setWsMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -53,23 +61,62 @@ export default function Header({ timeFilter, onTimeFilter, user, onLogout, onNav
 
   return (
     <header className="header">
-      <div
-        className="header-logo-container"
-        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-        onClick={() => onNavigate('overview')}
-      >
-        <ApertureLogo size={26} showText={true} textSub="AI Gateway" />
+      {/* Brand & Workspace Switcher */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div
+          className="header-logo-container"
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          onClick={() => onNavigate('overview')}
+        >
+          <ApertureLogo size={26} showText={true} textSub="AI Gateway" />
+        </div>
+
+        <div className="header-divider" />
+
+        {/* Workspace Dropdown */}
+        <div className="workspace-switcher" ref={wsRef} style={{ position: 'relative' }}>
+          <button
+            className="workspace-btn"
+            onClick={() => setWsMenuOpen(!wsMenuOpen)}
+            aria-expanded={wsMenuOpen}
+          >
+            <span className="workspace-name">{workspace}</span>
+            <ChevronDown size={13} className={`chevron-icon${wsMenuOpen ? ' rotate' : ''}`} />
+          </button>
+
+          {wsMenuOpen && (
+            <div className="workspace-dropdown-menu">
+              <div className="workspace-dropdown-title">Workspaces</div>
+              {['Default Workspace', 'Staging & QA', 'Enterprise Client AI'].map(ws => (
+                <button
+                  key={ws}
+                  className={`workspace-item${workspace === ws ? ' active' : ''}`}
+                  onClick={() => { setWorkspace(ws); setWsMenuOpen(false); }}
+                >
+                  <span>{ws}</span>
+                  {workspace === ws && <CheckCircle2 size={13} style={{ color: 'var(--brand-primary)', marginLeft: 'auto' }} />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="env-badge">
+          <span className="env-dot" />
+          <span>Production</span>
+        </div>
       </div>
 
-      <div className="header-divider" />
-
+      {/* Live Services Telemetry */}
       <div className="header-pills">
         <ServicePill label="Gateway" addr=":8080" up={health.gateway} dotClass="orange" icon={Server} />
         <ServicePill label="Kafka" addr=":9092" up={health.kafka} dotClass="cyan" icon={Radio} />
         <ServicePill label="DynamoDB" addr=":8001" up={health.dynamodb} dotClass="" icon={Database} />
       </div>
 
+      {/* Right Controls */}
       <div className="header-right">
+        {/* Time Filters */}
         <div className="time-filter-group">
           {TIME_FILTERS.map(f => (
             <button
@@ -83,7 +130,28 @@ export default function Header({ timeFilter, onTimeFilter, user, onLogout, onNav
           ))}
         </div>
 
-        {/* User profile dropdown */}
+        {/* Quick Docs Link */}
+        <a
+          href="https://portkey.ai/docs"
+          target="_blank"
+          rel="noreferrer"
+          className="header-icon-btn"
+          title="Portkey & Aperture Documentation"
+        >
+          <BookOpen size={15} />
+        </a>
+
+        {/* Notifications */}
+        <button
+          className="header-icon-btn"
+          title="Notifications"
+          onClick={() => alert('All systems operational. No active alerts.')}
+        >
+          <Bell size={15} />
+          <span className="notif-badge" />
+        </button>
+
+        {/* User Profile Dropdown */}
         <div className="user-dropdown-container" ref={menuRef} style={{ position: 'relative' }}>
           <button
             id="user-profile-btn"
@@ -136,6 +204,17 @@ export default function Header({ timeFilter, onTimeFilter, user, onLogout, onNav
               >
                 <Sliders size={14} />
                 <span>Manage API Keys</span>
+              </button>
+
+              <button
+                className="user-dropdown-item"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  onNavigate('config');
+                }}
+              >
+                <Server size={14} />
+                <span>System Configuration</span>
               </button>
 
               <div className="user-dropdown-divider" />
