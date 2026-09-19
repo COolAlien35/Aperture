@@ -21,6 +21,7 @@ import {
 import MetricCard from '../components/MetricCard.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import SlideDrawer from '../components/SlideDrawer.jsx';
+import PlainLanguageSummary from '../components/PlainLanguageSummary.jsx';
 import { fetchKPIs, fetchTimeSeries, fetchModelBreakdown, fetchRequests } from '../services/api.js';
 
 const MODEL_COLORS = ['#F97316', '#06B6D4', '#8B5CF6', '#10B981'];
@@ -67,6 +68,7 @@ export default function OverviewView({ timeFilter }) {
   const [selected, setSelected] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [narrativeTeam, setNarrativeTeam] = useState('engineering');
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -154,6 +156,9 @@ export default function OverviewView({ timeFilter }) {
           <div className="stat-info-value">{models.length || '—'}</div>
         </div>
       </div>
+
+      {/* Fintech Plain-Language Spend Summary (Person B Contract) */}
+      <PlainLanguageSummary activeTeam={narrativeTeam} onTeamChange={setNarrativeTeam} />
 
       {/* KPI Row */}
       <div className="metric-grid">

@@ -14,15 +14,21 @@ import {
   CheckCircle2,
   Edit2,
   RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
+import PlainLanguageSummary from '../components/PlainLanguageSummary.jsx';
+import PredictiveForecastChart from '../components/PredictiveForecastChart.jsx';
+import BudgetApprovalQueue from '../components/BudgetApprovalQueue.jsx';
 import { fetchTeams } from '../services/api.js';
 
 export default function BudgetsView() {
-  const [teams, setTeams]               = useState([]);
+  const [teams, setTeams]                 = useState([]);
   const [showAdjustModal, setAdjustModal] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState(null);
-  const [newBudgetVal, setNewBudgetVal] = useState('');
+  const [selectedTeam, setSelectedTeam]   = useState(null);
+  const [newBudgetVal, setNewBudgetVal]   = useState('');
+  const [activeNarrativeTeam, setActiveNarrative] = useState('engineering');
+  const [forecastTeam, setForecastTeam]   = useState('marketing');
 
   useEffect(() => {
     fetchTeams().then(data => {
@@ -36,7 +42,7 @@ export default function BudgetsView() {
           ? [{ name: 'Claude 3.5 Sonnet', spend: 5.60 }, { name: 'GPT-4o', spend: 2.80 }]
           : t.name === 'Product'
           ? [{ name: 'GPT-4o-mini', spend: 2.70 }, { name: 'Claude 3.5 Haiku', spend: 1.25 }]
-          : [{ name: 'GPT-4o', spend: 0.26 }],
+          : [{ name: 'GPT-4o', spend: 24.80 }],
       }));
       setTeams(enriched);
     });
@@ -72,12 +78,17 @@ export default function BudgetsView() {
     setAdjustModal(false);
   };
 
+  // Called when an admin approves a budget request in BudgetApprovalQueue!
+  const handleBudgetApproved = (teamId, newLimit) => {
+    setTeams(prev => prev.map(t => t.id === teamId ? { ...t, budget: newLimit } : t));
+  };
+
   return (
     <>
       <div className="page-header">
         <div>
           <h1 className="page-title">Budgets & Spend Guardrails</h1>
-          <p className="page-subtitle">Configure departmental quota caps, proactive Slack/webhook alerts, and pre-flight LLM kill-switches</p>
+          <p className="page-subtitle">Departmental quota caps, plain-language financial narratives, predictive forecasts, and approval loops</p>
         </div>
         <button
           className="btn btn-primary"
@@ -112,7 +123,7 @@ export default function BudgetsView() {
         </div>
       )}
 
-      {/* Portkey Top Stats Strip */}
+      {/* Top Stats Strip */}
       <div className="stats-info-row">
         <div className="stat-info-item">
           <div className="stat-info-label">Total Org Budget</div>
@@ -144,7 +155,26 @@ export default function BudgetsView() {
         </div>
       </div>
 
+      {/* Plain-Language Narrative Component (Task 1) */}
+      <PlainLanguageSummary
+        activeTeam={activeNarrativeTeam}
+        onTeamChange={setActiveNarrative}
+      />
+
+      {/* Predictive Forecast Chart (Task 4) */}
+      <PredictiveForecastChart
+        activeTeam={forecastTeam}
+        onTeamChange={setForecastTeam}
+      />
+
       {/* Team Budget Cards Grid */}
+      <div className="section-header">
+        <div className="section-title">
+          <Users size={14} style={{ color: 'var(--brand-primary)' }} />
+          <span>Departmental Quota Allocations</span>
+        </div>
+      </div>
+
       <div className="budget-grid">
         {teams.map(t => {
           const pct = Math.min(Math.round((t.spent / (t.budget || 1)) * 100), 100);
@@ -292,6 +322,12 @@ export default function BudgetsView() {
           );
         })}
       </div>
+
+      {/* Budget Request / Approval Workflow Queue (Task 2) */}
+      <BudgetApprovalQueue
+        teams={teams}
+        onBudgetUpdated={handleBudgetApproved}
+      />
 
       {/* Adjust Budget Modal */}
       {showAdjustModal && selectedTeam && (

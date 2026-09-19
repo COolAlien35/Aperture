@@ -8,14 +8,18 @@ import {
   Lock,
   LogOut,
   ExternalLink,
+  GitPullRequest,
+  Layers,
 } from 'lucide-react';
 
 const SECTIONS = [
   {
-    title: 'OBSERVABILITY',
+    title: 'OBSERVABILITY & ROI',
     items: [
       { id: 'overview', icon: LayoutDashboard, label: 'Overview', path: '/' },
       { id: 'logs', icon: ListFilter, label: 'Logs & Traces', path: '/logs', badge: 'LIVE' },
+      { id: 'outcomes', icon: GitPullRequest, label: 'Cost per Outcome', path: '/outcomes', badge: 'NEW' },
+      { id: 'coverage', icon: Layers, label: 'Coverage Map', path: '/coverage', badge: 'AUDIT' },
     ],
   },
   {
@@ -26,9 +30,9 @@ const SECTIONS = [
     ],
   },
   {
-    title: 'GOVERNANCE',
+    title: 'GOVERNANCE & FINTECH',
     items: [
-      { id: 'budgets', icon: ShieldCheck, label: 'Budgets & RBAC', path: '/budgets' },
+      { id: 'budgets', icon: ShieldCheck, label: 'Budgets & Approvals', path: '/budgets' },
     ],
   },
   {

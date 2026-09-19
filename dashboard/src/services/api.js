@@ -4,6 +4,7 @@
 import {
   mockRequests, mockKeys, mockTeams,
   mockTimeSeries, mockModelBreakdown, mockCircuitBreaker, mockKPIs,
+  mockTeamSummaries, mockBudgetRequests, mockForecastData, mockPRCorrelations,
 } from './mockData.js';
 
 const BASE = '/api';
@@ -76,3 +77,46 @@ export async function createKey(payload) {
   });
   return data;
 }
+
+// ── Phase 2: Person B — Plain-language summary & forecast ─────────────────────
+
+export async function fetchTeamSummary(teamId = 'engineering') {
+  const data = await safeFetch(`${BASE}/summary/${teamId}`);
+  return data || mockTeamSummaries[teamId] || mockTeamSummaries.engineering;
+}
+
+export async function fetchTeamForecast(teamId = 'engineering') {
+  const data = await safeFetch(`${BASE}/forecast/${teamId}`);
+  return data || mockForecastData[teamId] || mockForecastData.engineering;
+}
+
+export async function fetchBudgetRequests() {
+  const data = await safeFetch(`${BASE}/budgets/requests`);
+  return data || mockBudgetRequests;
+}
+
+export async function submitBudgetRequest(payload) {
+  const data = await safeFetch(`${BASE}/budgets/requests`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return data || { success: true, id: `req-bg-${Math.random().toString(36).slice(2, 6)}`, ...payload, status: 'pending' };
+}
+
+export async function reviewBudgetRequest(requestId, action, reason = '') {
+  const data = await safeFetch(`${BASE}/budgets/requests/${requestId}/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return data || { success: true, requestId, status: action === 'approve' ? 'approved' : 'denied' };
+}
+
+// ── Phase 2: Person A — Git Activity & Cost-per-PR correlation ────────────────
+
+export async function fetchPRCorrelations(repoId = 'all') {
+  const data = await safeFetch(`${BASE}/correlations/prs?repo=${repoId}`);
+  return data || mockPRCorrelations;
+}
+

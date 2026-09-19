@@ -144,6 +144,7 @@ class UsageEvent(BaseModel):
     status: str = "success"  # "success" | "error" | "partial"
     timestamp: str  # ISO 8601 UTC
     error_message: str | None = None
+    session_id: str | None = None
 
     def model_post_init(self, __context: Any) -> None:
         if self.total_tokens == 0 and (self.prompt_tokens or self.completion_tokens):
@@ -172,4 +173,7 @@ class UsageEvent(BaseModel):
         }
         if self.error_message:
             item["error_message"] = self.error_message
+        if self.session_id:
+            item["session_id"] = self.session_id
         return item
+

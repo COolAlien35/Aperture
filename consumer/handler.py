@@ -164,6 +164,8 @@ def _write_usage_log(table, event: UsageEvent) -> None:
     }
     if event.error_message:
         item["error_message"] = event.error_message
+    if getattr(event, "session_id", None):
+        item["session_id"] = event.session_id
 
     table.put_item(Item=item)
     logger.debug("Usage log written: KEY#%s / USAGE#%s", event.key_id, event.timestamp)

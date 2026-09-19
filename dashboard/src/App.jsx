@@ -8,6 +8,8 @@ import BudgetsView from './views/BudgetsView.jsx';
 import GatewayView from './views/GatewayView.jsx';
 import LoginView from './views/LoginView.jsx';
 import ConfigView from './views/ConfigView.jsx';
+import CostPerOutcomeView from './views/CostPerOutcomeView.jsx';
+import CoverageView from './views/CoverageView.jsx';
 
 const VIEWS = {
   overview: OverviewView,
@@ -16,9 +18,12 @@ const VIEWS = {
   budgets:  BudgetsView,
   gateway:  GatewayView,
   config:   ConfigView,
+  outcomes: CostPerOutcomeView,
+  coverage: CoverageView,
 };
 
-const DEFAULT_USER = {
+const DEFAULT_USER = 
+{
   name: 'Soham Banerjee',
   email: 'soham@aperture.io',
   role: 'Admin',
@@ -34,6 +39,9 @@ export default function App() {
     if (path === '/keys') return 'keys';
     if (path === '/budgets') return 'budgets';
     if (path === '/gateway') return 'gateway';
+    if (path === '/outcomes') return 'outcomes';
+    if (path === '/coverage') return 'coverage';
+    if (path === '/config') return 'config';
     return 'overview';
   });
 
